@@ -1,0 +1,81 @@
+#
+# Copyright (C) 2023 Xiaomi Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+menu "Brightness Controller"
+
+config SYSTEM_BRIGHTNESS_SERVICE
+	bool "Brightness Service"
+	depends on VIDEO_FB
+	default n
+	---help---
+		The controller is capable of control screen brightness automatically
+		based on ambient light sensor. The controller can be used by multiple
+		applications and switch between them.
+
+
+if SYSTEM_BRIGHTNESS_SERVICE
+
+config BRIGHTNESS_SERVICE_DEFAULT_DEVICE
+	string "The default fb device to control brightness"
+	default "/dev/fb0"
+	---help---
+		The device used to set brightness via ioctl. It must support
+		FBIOSET_POWER command.
+
+config BRIGHTNESS_SERVICE_DEBUG
+	bool "Enable debug"
+	default n
+
+config BRIGHTNESS_SERVICE_DEBUG_ERROR
+	bool "Enable debug warning"
+	default n
+	depends on BRIGHTNESS_SERVICE_DEBUG
+
+config BRIGHTNESS_SERVICE_DEBUG_WARN
+	bool "Enable debug warning"
+	default n
+	depends on BRIGHTNESS_SERVICE_DEBUG_ERROR
+
+config BRIGHTNESS_SERVICE_DEBUG_INFO
+	bool "Enable debug info"
+	default n
+	depends on BRIGHTNESS_SERVICE_DEBUG_WARN
+
+config BRIGHTNESS_SERVICE_TEST
+	bool "Enable brightness test"
+	default n
+	depends on PTHREAD_CLEANUP_STACKSIZE > 0
+	---help---
+		Enable brightness test task to test the brightness controller.
+		Depends on PTHREAD_CLEANUP_STACKSIZE to clean up the task.
+
+if BRIGHTNESS_SERVICE_TEST
+config BRIGHTNESS_TEST_PRIORITY
+	int "brightness test task priority"
+	default 100
+
+config BRIGHTNESS_TEST_STACKSIZE
+	int "brightness test task stack size"
+	default DEFAULT_TASK_STACKSIZE
+
+config BRIGHTNESS_TEST_UI
+	bool "Enable brightness test UI"
+	default n
+	depends on BRIGHTNESS_SERVICE_TEST && GRAPHICS_LVGL
+endif
+endif
+
+endmenu # SYSTEM_BRIGHTNESS_SERVICE
