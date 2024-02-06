@@ -1,0 +1,7 @@
+BasedOnStyle: llvm
+BreakBeforeBraces: Custom
+IndentWidth: 4
+BraceWrapping:
+  AfterFunction: true
+AlignArrayOfStructures: Left
+SeparateDefinitionBlocks: Always
