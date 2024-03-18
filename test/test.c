@@ -72,6 +72,7 @@ static void usage(void)
         fflush(stdout);                                                        \
     } while (0)
 
+/* clang-format off */
 static const struct option options[] = {
     {"level", required_argument, NULL, 'l'}, /*brightness level*/
     {"ramp", required_argument, NULL, 'r'}, /*ramp rate per second*/
@@ -83,6 +84,7 @@ static const struct option options[] = {
 
     {NULL},
 };
+/* clang-format on */
 
 static brightness_session_t *g_session = NULL;
 
@@ -176,6 +178,29 @@ static int test_brightness_basic_ops(brightness_session_t *session)
     return OK;
 }
 
+static void brightness_update_cb(int level, void *user_data)
+{
+    *(int *)user_data = level;
+}
+
+static int test_brightness_update_cb(void)
+{
+    brightness_session_t *session = brightness_create_session();
+    assert_msg(session != NULL, "Test update cb, session create failed\n");
+    brightness_set_mode(session, BRIGHTNESS_MODE_MANUAL);
+
+    int level = 0;
+    brightness_set_update_cb(session, brightness_update_cb, &level);
+    brightness_set_target(session, 0, 0);
+    usleep(10);
+    brightness_set_target(session, 100, 0);
+    usleep(10);
+    assert_msg(level == 100, "Test update cb failed: get %d, expect: %d\n",
+               level, 100);
+    brightness_destroy_session(session);
+    return OK;
+}
+
 static int operation_test(brightness_session_t *session, int sample_rate)
 {
     int ret;
@@ -189,6 +214,7 @@ static int operation_test(brightness_session_t *session, int sample_rate)
 
     /* Basic test */
     test_brightness_basic_ops(session);
+    test_brightness_update_cb();
     test_brightness_off(session);
     test_brightness_full_power(session);
 

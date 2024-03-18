@@ -54,4 +54,7 @@ int display_brightness_get(struct display_brightness_s *display,
                            int *brightness);
 void display_brightness_close_device(struct display_brightness_s *dev);
 
+int display_brightness_set_update_cb(struct display_brightness_s *display,
+                                     brightness_update_cb_t *cb,
+                                     void *user_data);
 #endif
