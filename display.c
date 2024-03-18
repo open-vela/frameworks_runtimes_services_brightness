@@ -56,6 +56,8 @@ struct display_brightness_s {
     int steps;             /* How may steps have been made. */
     int start_brightness;  /* start brightness of ramp */
     uv_timer_t ramp_timer; /* Timer to smoothly change brightness */
+    brightness_update_cb_t *cb;
+    void *user_data;
 };
 
 /****************************************************************************
@@ -67,6 +69,9 @@ static int write_brightness(struct display_brightness_s *display,
 {
     int ret;
 
+    if (display->current == brightness)
+        return OK;
+
     info("Set brightness to %d\n", brightness);
     ret = ioctl(display->fd, FBIOSET_POWER, brightness);
     if (ret < 0) {
@@ -74,6 +79,10 @@ static int write_brightness(struct display_brightness_s *display,
         return ret;
     }
 
+    display->current = brightness;
+    if (display->cb) {
+        display->cb(brightness, display->user_data);
+    }
     return 0;
 }
 
@@ -113,7 +122,6 @@ static void ramp_timer_cb(uv_timer_t *handle)
         uv_timer_stop(handle);
     }
 
-    display->current = current;
     ret = write_brightness(display, current);
     if (ret < 0) {
         err("Failed to write brightness, %d\n", ret);
@@ -196,7 +204,6 @@ int display_brightness_set(struct display_brightness_s *display, int brightness,
 
     if (ramp == 0) {
         display->ramp = 0;
-        display->current = brightness;
         return write_brightness(display, brightness);
     } else {
         info("Start ramp timer, set brightness to %d, ramp %d\n", brightness,
@@ -232,4 +239,15 @@ void display_brightness_close_device(struct display_brightness_s *display)
     uv_timer_stop(&display->ramp_timer);
     uv_close((uv_handle_t *)&display->ramp_timer, timer_close_cb);
     close(display->fd);
+}
+
+int display_brightness_set_update_cb(struct display_brightness_s *display,
+                                     brightness_update_cb_t *cb, void *user_data)
+{
+    if (display == NULL)
+        return -EINVAL;
+
+    display->cb = cb;
+    display->user_data = user_data;
+    return 0;
 }

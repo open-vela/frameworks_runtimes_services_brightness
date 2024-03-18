@@ -53,6 +53,7 @@ enum {
 
 typedef int brightnessctl_mode_t;
 
+typedef void(brightness_update_cb_t)(int level, void *user_data);
 struct brightness_session_s;
 typedef struct brightness_session_s brightness_session_t;
 
@@ -60,7 +61,7 @@ typedef struct brightness_session_s brightness_session_t;
  * Public Function Prototypes
  ****************************************************************************/
 
-int brightness_service_start(uv_loop_t * loop);
+int brightness_service_start(uv_loop_t *loop);
 void brightness_service_stop(void);
 
 /**
@@ -83,7 +84,7 @@ void brightness_destroy_session(brightness_session_t *session);
  * Get system brightness session.
  * @return the system brightness session
  */
-brightness_session_t * brightness_get_system_session(void);
+brightness_session_t *brightness_get_system_session(void);
 
 /**
  * Set/get brightness level.
@@ -126,6 +127,17 @@ int brightness_set_mode(brightness_session_t *session,
  * @return the current brightness mode, negative number on error.
  */
 brightnessctl_mode_t brightness_get_mode(brightness_session_t *session);
+
+/**
+ * Set brightness update callback. When display brightness changes, it will
+ * call this callback.
+ *
+ * @param session the brightness session instance
+ * @param cb the brightness update callback, set cb to NULL clears existing cb.
+ * @param user_data the user data to pass to callback
+ */
+int brightness_set_update_cb(brightness_session_t *session,
+                             brightness_update_cb_t *cb, void *user_data);
 
 static inline int brightess_display_turn_off(brightness_session_t *session)
 {
