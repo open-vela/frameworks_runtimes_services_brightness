@@ -40,6 +40,8 @@ struct brightness_session_s {
     brightnessctl_mode_t mode;
     int ramp;
     int target;
+    brightness_update_cb_t *cb;
+    void *user_data;
 };
 
 struct brightness_s {
@@ -53,6 +55,8 @@ struct brightness_s {
     brightnessctl_mode_t current_mode;
     int current_ramp;
     int current_target;
+    brightness_update_cb_t *cb;
+    void *user_data;
 };
 
 /****************************************************************************
@@ -120,6 +124,9 @@ static void apply_session(struct brightness_s *controller,
              pending->ramp);
         set_target(controller, pending->target, pending->ramp);
     }
+
+    controller->cb = pending->cb;
+    controller->user_data = pending->user_data;
 }
 
 static void uv_mq_read_cb(uv_poll_t *handle, int status, int events)
@@ -176,6 +183,14 @@ static int brightness_apply_session(brightness_session_t *session)
     return ret;
 }
 
+static void brightness_update_cb(int brightness, void *user_data)
+{
+    struct brightness_s *controller = user_data;
+    if (controller->cb) {
+        controller->cb(brightness, controller->user_data);
+    }
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -203,6 +218,8 @@ int brightness_service_start(uv_loop_t *loop)
         free(controller);
         return ERROR;
     }
+
+    display_brightness_set_update_cb(display, brightness_update_cb, controller);
     controller->display = display;
 
     attr.mq_msgsize = sizeof(brightness_session_t);
@@ -339,4 +356,15 @@ brightnessctl_mode_t brightness_get_mode(brightness_session_t *session)
         return session->mode;
 
     return g_controller->current_mode;
+}
+
+int brightness_set_update_cb(brightness_session_t *session,
+                             brightness_update_cb_t *cb, void *user_data)
+{
+    if (session == NULL)
+        return -EINVAL;
+    session->cb = cb;
+    session->user_data = user_data;
+
+    return brightness_apply_session(session);
 }
