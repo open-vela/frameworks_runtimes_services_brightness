@@ -311,6 +311,7 @@ struct spline_s *spline_create(const float *x, const float *y, int n)
     if (ret != OK) {
         free(_x);
         free(_y);
+        free(spline);
         return NULL;
     }
 
