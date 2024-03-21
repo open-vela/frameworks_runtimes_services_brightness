@@ -136,7 +136,7 @@ static void uv_mq_read_cb(uv_poll_t *handle, int status, int events)
     if (events & UV_READABLE) {
         controller = handle->data;
         nread = mq_receive(controller->fd_poll, (char *)&new_session,
-                                   sizeof(brightness_session_t), NULL);
+                           sizeof(brightness_session_t), NULL);
         if (nread < 0) {
             err("mq_receive failed: %d\n", nread);
             return;
@@ -162,7 +162,6 @@ static int brightness_apply_session(brightness_session_t *session)
 
     fd = mq_open(MESSAGE_QUEUE_NAME, O_WRONLY | O_CLOEXEC);
     if (fd < 0) {
-        free(session);
         err("msq open failed: %d, errno: %d\n", fd, errno);
         return -errno;
     }
@@ -187,7 +186,7 @@ int brightness_service_start(uv_loop_t *loop)
     uv_poll_t *poll;
     struct mq_attr attr = {0};
     struct brightness_s *controller;
-    struct display_brightness_s * display;
+    struct display_brightness_s *display;
 
     controller = zalloc(sizeof(struct brightness_s));
     if (controller == NULL) {
@@ -223,7 +222,7 @@ int brightness_service_start(uv_loop_t *loop)
     poll->data = controller;
     uv_poll_start(poll, UV_READABLE, uv_mq_read_cb);
 
-    controller->current_ramp =BRIGHTNESS_RAMP_SPEED_OFF;
+    controller->current_ramp = BRIGHTNESS_RAMP_SPEED_OFF;
     display_brightness_get(display, &controller->current_target);
     controller->current_mode = BRIGHTNESS_MODE_DEFAULT;
 
@@ -260,6 +259,7 @@ void brightness_service_stop(void)
 brightness_session_t *brightness_create_session(void)
 {
     brightness_session_t *session;
+    int ret;
 
     session = calloc(1, sizeof(brightness_session_t));
     if (session == NULL) {
@@ -271,7 +271,12 @@ brightness_session_t *brightness_create_session(void)
     session->target = brightness_get_current_level();
     session->mode = BRIGHTNESS_MODE_DEFAULT;
 
-    brightness_apply_session(session);
+    ret = brightness_apply_session(session);
+    if (ret != OK) {
+        free(session);
+        return NULL;
+    }
+
     return session;
 }
 
@@ -298,7 +303,7 @@ int brightness_get_current_level(void)
 
 int brightness_set_target(brightness_session_t *session, int level, int ramp)
 {
-    if(session == NULL)
+    if (session == NULL)
         return -EINVAL;
 
     if (level == session->target && ramp == session->ramp)
@@ -307,8 +312,7 @@ int brightness_set_target(brightness_session_t *session, int level, int ramp)
     session->ramp = ramp;
     session->target = level;
 
-    brightness_apply_session(session);
-    return 0;
+    return brightness_apply_session(session);
 }
 
 int brightness_get_target(brightness_session_t *session)
@@ -322,12 +326,11 @@ int brightness_get_target(brightness_session_t *session)
 int brightness_set_mode(brightness_session_t *session,
                         brightnessctl_mode_t mode)
 {
-    if(session == NULL)
+    if (session == NULL)
         return -EINVAL;
     session->mode = mode;
 
-    brightness_apply_session(session);
-    return 0;
+    return brightness_apply_session(session);
 }
 
 brightnessctl_mode_t brightness_get_mode(brightness_session_t *session)
