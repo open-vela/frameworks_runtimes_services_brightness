@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include <brightness_service.h>
+#include "../brightness.h"
 
 int main(int argc, char *argv[])
 {
