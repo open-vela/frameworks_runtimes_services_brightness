@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Xiaomi Corporation
+ * Copyright (C) 2024 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #include <lvgl/lvgl.h>
 #include <stdbool.h>
 
-#include <brightness_service.h>
+#include "../brightness.h"
 
 static void slider_event_cb(lv_event_t *e);
 static lv_obj_t *slider_label;

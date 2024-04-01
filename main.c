@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Xiaomi Corporation
+ * Copyright (C) 2024 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@
  * Included Files
  ****************************************************************************/
 #include <errno.h>
-#include <mqueue.h>
 
-#include <brightness_service.h>
+#include "brightness.h"
 
 #include "abc.h"
 #include "display.h"
@@ -29,8 +28,6 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-
-#define MESSAGE_QUEUE_NAME "brightness_service"
 
 /****************************************************************************
  * Private Types
@@ -49,8 +46,6 @@ struct brightness_s {
     struct abc_s *abc;
     struct display_brightness_s *display;
     struct brightness_session_s *session_default;
-    int fd_poll;
-    uv_poll_t poll; /* Poll message queue */
 
     brightnessctl_mode_t current_mode;
     int current_ramp;
@@ -90,14 +85,15 @@ static void set_target(struct brightness_s *controller, int target, int ramp)
     }
 }
 
-static void apply_session(struct brightness_s *controller,
-                          brightness_session_t *pending)
+static void apply_session(brightness_session_t *pending)
 {
     struct abc_s *abc;
 
     if (pending == NULL) {
         return;
     }
+
+    struct brightness_s *controller = g_controller;
 
     abc = controller->abc; /* Automatic brightness controller. */
 
@@ -129,60 +125,6 @@ static void apply_session(struct brightness_s *controller,
     controller->user_data = pending->user_data;
 }
 
-static void uv_mq_read_cb(uv_poll_t *handle, int status, int events)
-{
-    struct brightness_s *controller;
-    brightness_session_t new_session;
-    ssize_t nread;
-
-    if (status < 0) {
-        err("poll error: %d\n", status);
-        return;
-    }
-
-    if (events & UV_READABLE) {
-        controller = handle->data;
-        nread = mq_receive(controller->fd_poll, (char *)&new_session,
-                           sizeof(brightness_session_t), NULL);
-        if (nread < 0) {
-            err("mq_receive failed: %d\n", nread);
-            return;
-        }
-
-        if (nread != sizeof(brightness_session_t)) {
-            err("invalid message size: %d\n", nread);
-            return;
-        }
-
-        apply_session(controller, &new_session);
-    }
-}
-
-static int brightness_apply_session(brightness_session_t *session)
-{
-    int fd;
-    int ret;
-
-    if (session == NULL) {
-        return EFAULT;
-    }
-
-    fd = mq_open(MESSAGE_QUEUE_NAME, O_WRONLY | O_CLOEXEC);
-    if (fd < 0) {
-        err("msq open failed: %d, errno: %d\n", fd, errno);
-        return -errno;
-    }
-
-    ret = mq_send(fd, (char *)session, sizeof(brightness_session_t), 0);
-    mq_close(fd);
-    if (ret < 0) {
-        err("mq_send failed: %d, errno: %d\n", ret, errno);
-        ret = -errno;
-    }
-
-    return ret;
-}
-
 static void brightness_update_cb(int brightness, void *user_data)
 {
     struct brightness_s *controller = user_data;
@@ -197,9 +139,6 @@ static void brightness_update_cb(int brightness, void *user_data)
 
 int brightness_service_start(uv_loop_t *loop)
 {
-    int fd;
-    uv_poll_t *poll;
-    struct mq_attr attr = {0};
     struct brightness_s *controller;
     struct display_brightness_s *display;
 
@@ -222,23 +161,6 @@ int brightness_service_start(uv_loop_t *loop)
     display_brightness_set_update_cb(display, brightness_update_cb, controller);
     controller->display = display;
 
-    attr.mq_msgsize = sizeof(brightness_session_t);
-    attr.mq_maxmsg = 1;
-    fd = mq_open(MESSAGE_QUEUE_NAME, O_RDWR | O_CREAT | O_NONBLOCK | O_CLOEXEC,
-                 0, &attr);
-    if (fd < 0) {
-        err("msq open failed: %d\n", fd);
-        display_brightness_close_device(display);
-        free(controller);
-        return ERROR;
-    }
-
-    controller->fd_poll = fd;
-    poll = &controller->poll;
-    uv_poll_init(loop, poll, fd);
-    poll->data = controller;
-    uv_poll_start(poll, UV_READABLE, uv_mq_read_cb);
-
     controller->current_ramp = BRIGHTNESS_RAMP_SPEED_OFF;
     display_brightness_get(display, &controller->current_target);
     controller->current_mode = BRIGHTNESS_MODE_DEFAULT;
@@ -254,16 +176,10 @@ int brightness_service_start(uv_loop_t *loop)
 void brightness_service_stop(void)
 {
     struct brightness_s *controller = g_controller;
-    uv_poll_t *poll;
-
     if (controller == NULL)
         return;
 
     warn("brightness service exit.\n");
-    poll = &controller->poll;
-    uv_poll_stop(poll);
-    uv_close((uv_handle_t *)poll, NULL);
-    mq_close(controller->fd_poll);
     g_controller = NULL;
 
     display_brightness_close_device(controller->display);
@@ -276,7 +192,6 @@ void brightness_service_stop(void)
 brightness_session_t *brightness_create_session(void)
 {
     brightness_session_t *session;
-    int ret;
 
     session = calloc(1, sizeof(brightness_session_t));
     if (session == NULL) {
@@ -288,11 +203,7 @@ brightness_session_t *brightness_create_session(void)
     session->target = brightness_get_current_level();
     session->mode = BRIGHTNESS_MODE_DEFAULT;
 
-    ret = brightness_apply_session(session);
-    if (ret != OK) {
-        free(session);
-        return NULL;
-    }
+    apply_session(session);
 
     return session;
 }
@@ -329,7 +240,8 @@ int brightness_set_target(brightness_session_t *session, int level, int ramp)
     session->ramp = ramp;
     session->target = level;
 
-    return brightness_apply_session(session);
+    apply_session(session);
+    return OK;
 }
 
 int brightness_get_target(brightness_session_t *session)
@@ -347,7 +259,8 @@ int brightness_set_mode(brightness_session_t *session,
         return -EINVAL;
     session->mode = mode;
 
-    return brightness_apply_session(session);
+    apply_session(session);
+    return OK;
 }
 
 brightnessctl_mode_t brightness_get_mode(brightness_session_t *session)
@@ -366,5 +279,6 @@ int brightness_set_update_cb(brightness_session_t *session,
     session->cb = cb;
     session->user_data = user_data;
 
-    return brightness_apply_session(session);
+    apply_session(session);
+    return OK;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Xiaomi Corporation
+ * Copyright (C) 2024 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ brightnessctl_mode_t brightness_get_mode(brightness_session_t *session);
 int brightness_set_update_cb(brightness_session_t *session,
                              brightness_update_cb_t *cb, void *user_data);
 
-static inline int brightess_display_turn_off(brightness_session_t *session)
+static inline int brightness_display_turn_off(brightness_session_t *session)
 {
     return brightness_set_target(session, BRIGHTNESS_LEVEL_OFF, 0);
 }

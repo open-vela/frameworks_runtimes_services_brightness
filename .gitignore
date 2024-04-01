@@ -3,4 +3,5 @@
 *.depend
 *.dep
 *.su
-
+aidl/*/*/*.h
+aidl/*/*/*.cpp
