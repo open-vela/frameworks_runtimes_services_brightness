@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Xiaomi Corporation
+ * Copyright (C) 2024 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <brightness_service.h>
+#include "../brightness.h"
 
 #include "fakesensor.h"
 

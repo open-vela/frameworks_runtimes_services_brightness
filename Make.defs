@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023 Xiaomi Corporation
+# Copyright (C) 2024 Xiaomi Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,5 +19,6 @@ ifeq ($(CONFIG_SYSTEM_BRIGHTNESS_SERVICE),y)
 CONFIGURED_APPS += frameworks/base/brightness
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/brightness/include
 CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/brightness/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/brightness/aidl
 
 endif

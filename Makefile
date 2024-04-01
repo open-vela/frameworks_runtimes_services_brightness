@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023 Xiaomi Corporation
+# Copyright (C) 2024 Xiaomi Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,15 @@
 
 include $(APPDIR)/Make.defs
 
+CXXEXT = .cpp
+
 CSRCS += main.c spline.c abc.c display.c lightsensor.c
+
+AIDLFLAGS = --lang=cpp --include=aidl/ -I. -oaidl -haidl/
+AIDLSRCS += $(shell find aidl -name *.aidl)
+CXXSRCS += $(patsubst %.aidl,%$(CXXEXT),$(AIDLSRCS))
+CXXSRCS += $(wildcard *.cpp)
+CXXFLAGS += -I. -Iaidl
 
 ifneq ($(CONFIG_BRIGHTNESS_SERVICE_TEST),)
 CSRCS += test/fakesensor.c
@@ -30,6 +38,17 @@ MAINSRC += test/test.c
 PROGNAME += brightness_test
 PRIORITY += $(CONFIG_BRIGHTNESS_TEST_PRIORITY)
 STACKSIZE += $(CONFIG_BRIGHTNESS_TEST_STACKSIZE)
+
+MAINSRC += test/server.cpp
+PROGNAME += brightness_server
+PRIORITY += $(CONFIG_BRIGHTNESS_TEST_PRIORITY)
+STACKSIZE += $(CONFIG_BRIGHTNESS_TEST_STACKSIZE)
+
+MAINSRC += test/client.cpp
+PROGNAME += brightness_client
+PRIORITY += $(CONFIG_BRIGHTNESS_TEST_PRIORITY)
+STACKSIZE += $(CONFIG_BRIGHTNESS_TEST_STACKSIZE)
+
 
 ifneq ($(CONFIG_BRIGHTNESS_TEST_UI),)
 CSRCS += test/ui.c
