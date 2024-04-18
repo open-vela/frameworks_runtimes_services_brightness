@@ -36,8 +36,8 @@ extern "C" {
 #define BRIGHTNESS_LEVEL_FULL -2
 
 /* Backlight power level range definitions */
-#define BACKLIGHT_LEVEL_MAX 250
-#define BACKLIGHT_LEVEL_MIN 20
+#define BACKLIGHT_LEVEL_MAX 255
+#define BACKLIGHT_LEVEL_MIN 0
 
 /* Default to automatic brightness control mode */
 #define BRIGHTNESS_MODE_DEFAULT BRIGHTNESS_MODE_AUTO
