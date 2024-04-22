@@ -42,6 +42,10 @@
 
 #define MAX_GAMMA 2.0f
 
+#define LIGHTSENSOR_JITTER_THRESHOLD    5.0f    /* lux +-5 is regarded as jitter */
+#define LIGHTSENSOR_DRAMATIC_THRESHOLD  20.0f   /* lux change > 20 is regarded as dramatic */
+#define LIGHTSENSOR_FILTER_FACTOR 0.9f
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -61,7 +65,7 @@ struct abc_s {
     bool running;
     uv_loop_t *loop;
 
-    int target;
+    int target;     /* Current brightness target calculated by abc. */
     float lux_last; /* Last valid lux value received */
 
     float user_lux;
@@ -114,10 +118,24 @@ static void lightsensor_update_cb(const struct sensor_light data[], int n,
 
     float lux = data[0].light;
 
-    abc->lux_last = lux;
-    if (!abc->running)
+    if (!abc->running) {
+        abc->lux_last = lux; /* Update last flux and return directly,. */
         return;
+    }
 
+    /* Filter jitter. */
+    float delta = fabs(lux - abc->lux_last);
+    if (delta <= LIGHTSENSOR_JITTER_THRESHOLD) {
+        return;
+    }
+
+    if (delta < LIGHTSENSOR_DRAMATIC_THRESHOLD) {
+        /* Filter the input data. */
+        lux = lux * LIGHTSENSOR_FILTER_FACTOR +
+            abc->lux_last * (1 - LIGHTSENSOR_FILTER_FACTOR);
+    }
+
+    abc->lux_last = lux;
     float power = spline_interpolate(abc->spline, lux);
     info("lux: %.2f, power: %.2f\n", lux, power);
     int brightness = (int)power;
@@ -125,8 +143,11 @@ static void lightsensor_update_cb(const struct sensor_light data[], int n,
         brightness = 255;
     }
 
-    display_brightness_set(abc->display, brightness,
-                           BRIGHTNESS_RAMP_SPEED_DEFAULT);
+    if (brightness != abc->target) {
+        abc->target = brightness;
+        display_brightness_set(abc->display, brightness,
+                               BRIGHTNESS_RAMP_SPEED_DEFAULT);
+    }
 }
 
 static float calculate_adjustment(float max_gamma, float desired, float current)
@@ -355,6 +376,7 @@ struct abc_s *abc_init(uv_loop_t *loop, struct display_brightness_s *display)
     abc->loop = loop;
     abc->sensor = sensor;
     abc->display = display;
+    abc->target = -1;
     abc->default_curve_lux = default_curve_lux;
     abc->default_curve_power = default_curve_power;
     abc->npoints = nitems(default_curve_lux);

@@ -163,7 +163,7 @@ int brightness_service_start(uv_loop_t *loop)
 
     controller->current_ramp = BRIGHTNESS_RAMP_SPEED_OFF;
     display_brightness_get(display, &controller->current_target);
-    controller->current_mode = BRIGHTNESS_MODE_DEFAULT;
+    controller->current_mode = -1;
 
     info("brightness service started, instance: %p\n", controller);
     g_controller = controller;
