@@ -20,6 +20,7 @@
 
 #include <optional>
 #include <string>
+#include <set>
 
 #include "os/brightness/BnBrightnessService.h"
 
@@ -54,7 +55,7 @@ class BrightnessService : public BnBrightnessService {
 
   private:
     uv_loop_t *mLoop;
-    sp<IBrightnessObserver> mObserver;
+    std::set <sp<IBrightnessObserver>> mObservers;
 };
 
 } // namespace brightness
