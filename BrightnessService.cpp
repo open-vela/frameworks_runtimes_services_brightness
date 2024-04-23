@@ -78,7 +78,7 @@ Status BrightnessService::getCurrentBrightness(int32_t *brightness)
 Status
 BrightnessService::monitorBrightness(const sp<IBrightnessObserver> &observer)
 {
-    mObserver = observer;
+    mObservers.insert(observer);
     ALOGD("BrightnessService::monitorBrightness: %p", observer.get());
     brightness_session_t *session = brightness_get_system_session();
     observer->onBrightnessChanged(brightness_get_current_level());
@@ -87,8 +87,8 @@ BrightnessService::monitorBrightness(const sp<IBrightnessObserver> &observer)
         session,
         [](int brightness, void *user_data) {
             auto *service = static_cast<BrightnessService *>(user_data);
-            if (service->mObserver != nullptr) {
-                service->mObserver->onBrightnessChanged((int32_t)brightness);
+            for (const auto &o : service->mObservers) {
+                o->onBrightnessChanged((int32_t)brightness);
             }
         },
         this);
@@ -99,10 +99,10 @@ Status
 BrightnessService::unmonitorBrightness(const sp<IBrightnessObserver> &observer)
 {
     ALOGD("BrightnessService::unmonitorBrightness: %p", observer.get());
-    if (mObserver == observer) {
+    mObservers.erase(observer);
+    if (mObservers.empty()) {
         brightness_session_t *session = brightness_get_system_session();
         brightness_set_update_cb(session, NULL, NULL);
-        mObserver = nullptr;
     }
     return Status::ok();
 }
