@@ -35,6 +35,14 @@ config BRIGHTNESS_SERVICE_DEFAULT_DEVICE
 		The device used to set brightness via ioctl. It must support
 		FBIOSET_POWER command.
 
+config BACKLIGHT_LEVEL_MIN
+	int "The minimum backlight level"
+	default 1
+
+config BACKLIGHT_LEVEL_MAX
+	int "The maximum backlight level"
+	default 255
+
 config BRIGHTNESS_SERVICE_DEBUG
 	bool "Enable debug"
 	default n
