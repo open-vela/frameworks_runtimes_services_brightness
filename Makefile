@@ -26,6 +26,10 @@ CXXSRCS += $(patsubst %.aidl,%$(CXXEXT),$(AIDLSRCS))
 CXXSRCS += $(wildcard *.cpp)
 CXXFLAGS += -I. -Iaidl
 
+ifneq ($(CONFIG_BRIGHTNESS_SERVICE_PERSISTENT),)
+CSRCS += persist.c
+endif
+
 ifneq ($(CONFIG_BRIGHTNESS_SERVICE_TEST),)
 CSRCS += test/fakesensor.c
 

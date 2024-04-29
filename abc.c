@@ -23,12 +23,14 @@
 
 #include <sys/param.h>
 
+#include <sys/types.h>
 #include <uv.h>
 
 #include "brightness.h"
 
 #include "display.h"
 #include "lightsensor.h"
+#include "persist.h"
 #include "private.h"
 #include "spline.h"
 
@@ -42,9 +44,11 @@
 
 #define MAX_GAMMA 2.0f
 
-#define LIGHTSENSOR_JITTER_THRESHOLD    5.0f    /* lux +-5 is regarded as jitter */
-#define LIGHTSENSOR_DRAMATIC_THRESHOLD  20.0f   /* lux change > 20 is regarded as dramatic */
-#define LIGHTSENSOR_FILTER_FACTOR 0.9f
+/* clang-format off */
+#define LIGHTSENSOR_JITTER_THRESHOLD    5.0f /* lux +-5 is regarded as jitter */
+#define LIGHTSENSOR_DRAMATIC_THRESHOLD  20.0f /* lux change > 20 is regarded as dramatic */
+#define LIGHTSENSOR_FILTER_FACTOR       0.9f
+/* clang-format on */
 
 /****************************************************************************
  * Private Types
@@ -132,7 +136,7 @@ static void lightsensor_update_cb(const struct sensor_light data[], int n,
     if (delta < LIGHTSENSOR_DRAMATIC_THRESHOLD) {
         /* Filter the input data. */
         lux = lux * LIGHTSENSOR_FILTER_FACTOR +
-            abc->lux_last * (1 - LIGHTSENSOR_FILTER_FACTOR);
+              abc->lux_last * (1 - LIGHTSENSOR_FILTER_FACTOR);
     }
 
     abc->lux_last = lux;
@@ -291,6 +295,19 @@ static void interactive_timer_close_cb(uv_handle_t *handle)
     }
 }
 
+static void update_user_point(struct abc_s *abc, int lux, int target)
+{
+    compute_spline(abc, lux, target, MAX_GAMMA);
+
+    /* Add set user point */
+    abc->user_brightness = target;
+    abc->user_lux = lux;
+
+#ifdef CONFIG_BRIGHTNESS_SERVICE_PERSISTENT
+    brightness_save_user_point(lux, target);
+#endif
+}
+
 static void abc_interactive_timeout(uv_timer_t *handle)
 {
     struct abc_s *abc = handle->data;
@@ -305,14 +322,10 @@ static void abc_interactive_timeout(uv_timer_t *handle)
         return;
     }
 
-    compute_spline(abc, model->lux, model->brightness, MAX_GAMMA);
+    update_user_point(abc, model->lux, model->brightness);
 
     /* Resume auto brightness */
     abc->running = true;
-
-    /* Add set user point */
-    abc->user_brightness = model->brightness;
-    abc->user_lux = model->lux;
 
     /* Destroy the short term model */
     stop_interactive_model(abc);
@@ -382,9 +395,35 @@ struct abc_s *abc_init(uv_loop_t *loop, struct display_brightness_s *display)
     abc->npoints = nitems(default_curve_lux);
     abc->spline = spline_create(default_curve_lux, default_curve_power,
                                 nitems(default_curve_lux));
+    abc->user_lux = default_curve_lux[0];
+    abc->user_brightness = default_curve_power[0];
 
     info("start abc: %p\n", abc);
     return abc;
+}
+
+int abc_set_user_point(struct abc_s *abc, int lux, int target)
+{
+    /* User is manually adjusting */
+    if (abc->interactive_model) {
+        stop_interactive_model(abc);
+    }
+
+    update_user_point(abc, lux, target);
+    return OK;
+}
+
+int abc_get_user_point(struct abc_s *abc, int *lux, int *target)
+{
+    if (lux) {
+        *lux = abc->user_lux;
+    }
+
+    if (target) {
+        *target = abc->user_brightness;
+    }
+
+    return OK;
 }
 
 int abc_set_target(struct abc_s *abc, int target, int ramp)
