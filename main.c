@@ -23,6 +23,7 @@
 
 #include "abc.h"
 #include "display.h"
+#include "persist.h"
 #include "private.h"
 
 /****************************************************************************
@@ -112,6 +113,10 @@ static void apply_session(brightness_session_t *pending)
         }
 
         controller->abc = abc;
+
+#ifdef CONFIG_BRIGHTNESS_SERVICE_PERSISTENT
+        brightness_save_mode(pending->mode);
+#endif
     }
 
     if (controller->current_target != pending->target ||
@@ -119,6 +124,9 @@ static void apply_session(brightness_session_t *pending)
         info("change brightness to %d, ramp %d\n", pending->target,
              pending->ramp);
         set_target(controller, pending->target, pending->ramp);
+#ifdef CONFIG_BRIGHTNESS_SERVICE_PERSISTENT
+        brightness_save_level(pending->target);
+#endif
     }
 
     controller->cb = pending->cb;
@@ -133,6 +141,22 @@ static void brightness_update_cb(int brightness, void *user_data)
     }
 }
 
+static int brightness_user_point_internal(brightness_session_t *session,
+                                          int *lux, int *target, bool set)
+{
+    if (session == NULL)
+        return -EINVAL;
+
+    if (session->mode != BRIGHTNESS_MODE_AUTO)
+        return -EINVAL;
+
+    if (g_controller->abc == NULL)
+        return -ENOSYS;
+
+    return set ? abc_set_user_point(g_controller->abc, *lux, *target)
+               : abc_get_user_point(g_controller->abc, lux, target);
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -141,9 +165,18 @@ int brightness_service_start(uv_loop_t *loop)
 {
     struct brightness_s *controller;
     struct display_brightness_s *display;
+    brightness_session_t *session;
 
     controller = zalloc(sizeof(struct brightness_s));
     if (controller == NULL) {
+        return ENOMEM;
+    }
+
+    /* Create a default session for system wide settings. */
+    session = calloc(1, sizeof(brightness_session_t));
+    if (session == NULL) {
+        err("Failed to allocate memory\n");
+        free(controller);
         return ENOMEM;
     }
 
@@ -168,8 +201,17 @@ int brightness_service_start(uv_loop_t *loop)
     info("brightness service started, instance: %p\n", controller);
     g_controller = controller;
 
-    /* Create a default session for system wide settings. */
-    controller->session_default = brightness_create_session();
+    /* Use current brightness level as start point. */
+    session->target = brightness_get_current_level();
+    session->mode = BRIGHTNESS_MODE_DEFAULT;
+    controller->session_default = session;
+
+    /* Restore the saved settings or apply it right away. */
+#ifdef CONFIG_BRIGHTNESS_SERVICE_PERSISTENT
+    brightness_restore_settings();
+#else
+    apply_session(session);
+#endif
     return OK;
 }
 
@@ -199,12 +241,11 @@ brightness_session_t *brightness_create_session(void)
         return NULL;
     }
 
-    /* Use current brightensess level as start point. */
+    /* Use current brightness level as start point. */
     session->target = brightness_get_current_level();
     session->mode = BRIGHTNESS_MODE_DEFAULT;
 
     apply_session(session);
-
     return session;
 }
 
@@ -281,4 +322,16 @@ int brightness_set_update_cb(brightness_session_t *session,
 
     apply_session(session);
     return OK;
+}
+
+int brightness_set_user_point(brightness_session_t *session, int lux,
+                              int target)
+{
+    return brightness_user_point_internal(session, &lux, &target, true);
+}
+
+int brightness_get_user_point(brightness_session_t *session, int *lux,
+                              int *target)
+{
+    return brightness_user_point_internal(session, lux, target, false);
 }

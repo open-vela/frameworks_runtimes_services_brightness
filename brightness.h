@@ -149,6 +149,27 @@ static inline int brightness_display_full_power(brightness_session_t *session)
     return brightness_set_target(session, BRIGHTNESS_LEVEL_FULL, 0);
 }
 
+/**
+ * Set the auto brightness user control point. Only valid when controller is
+ * in auto mode.
+ * @param session the brightness session instance
+ * @param lux the lux value of the user control point
+ * @param target the target brightness level of the user control point
+ * @return 0 on success, negative on error
+ */
+int brightness_set_user_point(brightness_session_t *session, int lux,
+                              int target);
+
+/**
+ * Get the auto brightness user control point.
+ * @param session the brightness session instance
+ * @param lux the lux value of the user control point
+ * @param target the target brightness level of the user control point
+ * @return 0 on success, negative on error
+ */
+int brightness_get_user_point(brightness_session_t *session, int *lux,
+                              int *target);
+
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif

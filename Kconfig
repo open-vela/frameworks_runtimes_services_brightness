@@ -43,6 +43,14 @@ config BACKLIGHT_LEVEL_MAX
 	int "The maximum backlight level"
 	default 255
 
+config BRIGHTNESS_SERVICE_PERSISTENT
+	bool "Enable brightness persistent"
+	default y
+	depends on KVDB
+	---help---
+		Enable brightness persistent to save the brightness settings to
+		KVDB and restore it after reboot.
+
 config BRIGHTNESS_SERVICE_DEBUG
 	bool "Enable debug"
 	default n
