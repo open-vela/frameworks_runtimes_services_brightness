@@ -18,16 +18,13 @@
  * Automatic brightness control
  */
 
-#ifndef _BRIGHTNESS_ABC_H
-#define _BRIGHTNESS_ABC_H
+#ifndef _BRIGHTNESS_PERSIST_H
+#define _BRIGHTNESS_PERSIST_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <uv.h>
-
-#include "display.h"
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -35,15 +32,15 @@
 /****************************************************************************
  * Public Types
  ****************************************************************************/
-struct abc_s;
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
-struct abc_s *abc_init(uv_loop_t *loop, struct display_brightness_s *display);
-void abc_deinit(struct abc_s *abc);
-int abc_set_target(struct abc_s *abc, int target, int ramp);
-int abc_set_user_point(struct abc_s *abc, int lux, int target);
-int abc_get_user_point(struct abc_s *abc, int *lux, int *target);
+int brightness_save_settings(void);
+int brightness_save_mode(int mode);
+int brightness_save_level(int level);
+int brightness_save_user_point(int lux, int target);
+int brightness_restore_settings(void);
+
 #endif
