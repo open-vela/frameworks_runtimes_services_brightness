@@ -22,36 +22,15 @@
  ****************************************************************************/
 
 #include <uv.h>
+#include "BrightnessServiceC.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Special brightness ramp speed definitions */
-#define BRIGHTNESS_RAMP_SPEED_OFF 0
-#define BRIGHTNESS_RAMP_SPEED_DEFAULT -1
-
-/* Special brightness level definitions */
-#define BRIGHTNESS_LEVEL_OFF -1
-#define BRIGHTNESS_LEVEL_FULL -2
-
-/* Backlight power level range definitions */
-#define BACKLIGHT_LEVEL_MAX CONFIG_BACKLIGHT_LEVEL_MAX
-#define BACKLIGHT_LEVEL_MIN CONFIG_BACKLIGHT_LEVEL_MIN
-
-/* Default to automatic brightness control mode */
-#define BRIGHTNESS_MODE_DEFAULT BRIGHTNESS_MODE_AUTO
-
 /****************************************************************************
  * Public Types
  ****************************************************************************/
-
-enum {
-    BRIGHTNESS_MODE_AUTO = 0,
-    BRIGHTNESS_MODE_MANUAL,
-};
-
-typedef int brightnessctl_mode_t;
 
 typedef void(brightness_update_cb_t)(int level, void *user_data);
 struct brightness_session_s;

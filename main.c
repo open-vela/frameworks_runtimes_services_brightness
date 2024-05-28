@@ -275,6 +275,12 @@ int brightness_set_target(brightness_session_t *session, int level, int ramp)
     if (session == NULL)
         return -EINVAL;
 
+    if (level > 255)
+        level = 255;
+
+    if (level < 0)
+        level = 0;
+
     if (level == session->target && ramp == session->ramp)
         return 0;
 
