@@ -79,6 +79,11 @@ static void set_target(struct brightness_s *controller, int target, int ramp)
 
     controller->current_target = target;
     controller->current_ramp = ramp;
+
+    /* Make no change if the physical display does not exist. */
+    if (controller->display == NULL)
+        return;
+
     if (controller->abc) {
         abc_set_target(controller->abc, target, ramp);
     } else {
@@ -107,7 +112,7 @@ static void apply_session(brightness_session_t *pending)
                 abc = NULL;
             }
         } else {
-            if (abc == NULL) {
+            if (abc == NULL && controller->display) {
                 abc = abc_init(controller->loop, controller->display);
             }
         }
@@ -187,15 +192,14 @@ int brightness_service_start(uv_loop_t *loop)
     if (display == NULL) {
         err("Failed to open %s, %d\n", CONFIG_BRIGHTNESS_SERVICE_DEFAULT_DEVICE,
             errno);
-        free(controller);
-        return ERROR;
+        /* Ignore the error and continue */
+    } else {
+        display_brightness_set_update_cb(display, brightness_update_cb,
+                                         controller);
+        controller->display = display;
+        display_brightness_get(display, &controller->current_target);
     }
-
-    display_brightness_set_update_cb(display, brightness_update_cb, controller);
-    controller->display = display;
-
     controller->current_ramp = BRIGHTNESS_RAMP_SPEED_OFF;
-    display_brightness_get(display, &controller->current_target);
     controller->current_mode = -1;
 
     info("brightness service started, instance: %p\n", controller);
@@ -224,7 +228,9 @@ void brightness_service_stop(void)
     warn("brightness service exit.\n");
     g_controller = NULL;
 
-    display_brightness_close_device(controller->display);
+    if (controller->display)
+        display_brightness_close_device(controller->display);
+
     if (controller->abc)
         abc_deinit(controller->abc);
 
@@ -266,7 +272,10 @@ brightness_session_t *brightness_get_system_session(void)
 int brightness_get_current_level(void)
 {
     int current;
-    display_brightness_get(g_controller->display, &current);
+    if (g_controller->display)
+        display_brightness_get(g_controller->display, &current);
+    else
+        current = 0;
     return current;
 }
 
