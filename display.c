@@ -25,8 +25,8 @@
 
 #include <nuttx/video/fb.h>
 
-#include <uv.h>
 #include "brightness.h"
+#include <uv.h>
 
 #include "display.h"
 #include "private.h"
@@ -202,12 +202,12 @@ int display_brightness_set(struct display_brightness_s *display, int brightness,
         brightness = BACKLIGHT_LEVEL_MIN;
     }
 
+    syslog(LOG_INFO, "Set brightness to %d, ramp %d\n", brightness, ramp);
+
     if (ramp == 0) {
         display->ramp = 0;
         return write_brightness(display, brightness);
     } else {
-        info("Start ramp timer, set brightness to %d, ramp %d\n", brightness,
-             ramp);
         uv_update_time(display->loop);
         display->ramp = ramp / 1000.f * DISPLAY_BRIGHTNESS_RAMP_TIMER_PERIOD;
         if (brightness < display->current) {
@@ -242,7 +242,8 @@ void display_brightness_close_device(struct display_brightness_s *display)
 }
 
 int display_brightness_set_update_cb(struct display_brightness_s *display,
-                                     brightness_update_cb_t *cb, void *user_data)
+                                     brightness_update_cb_t *cb,
+                                     void *user_data)
 {
     if (display == NULL)
         return -EINVAL;
