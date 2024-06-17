@@ -72,6 +72,12 @@ static int write_brightness(struct display_brightness_s *display,
     if (display->current == brightness)
         return OK;
 
+    if (brightness > BACKLIGHT_LEVEL_MAX) {
+        brightness = BACKLIGHT_LEVEL_MAX;
+    } else if (brightness < BACKLIGHT_LEVEL_MIN) {
+        brightness = BACKLIGHT_LEVEL_MIN;
+    }
+
     info("Set brightness to %d\n", brightness);
     ret = ioctl(display->fd, FBIOSET_POWER, brightness);
     if (ret < 0) {
