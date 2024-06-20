@@ -104,7 +104,8 @@ static void apply_session(brightness_session_t *pending)
     abc = controller->abc; /* Automatic brightness controller. */
 
     if (controller->current_mode != pending->mode) {
-        info("change mode to %d\n", pending->mode);
+        syslog(LOG_INFO, "Change brightness mode to %s\n",
+               pending->mode ? "MANUAL" : "AUTO");
         controller->current_mode = pending->mode;
         if (pending->mode == BRIGHTNESS_MODE_MANUAL) {
             if (abc != NULL) {
@@ -126,8 +127,8 @@ static void apply_session(brightness_session_t *pending)
 
     if (controller->current_target != pending->target ||
         controller->current_ramp != pending->ramp) {
-        info("change brightness to %d, ramp %d\n", pending->target,
-             pending->ramp);
+        syslog(LOG_INFO, "Change brightness level to %d, ramp %d\n",
+               pending->target, pending->ramp);
         set_target(controller, pending->target, pending->ramp);
 #ifdef CONFIG_BRIGHTNESS_SERVICE_PERSISTENT
         brightness_save_level(pending->target);
