@@ -120,6 +120,10 @@ int brightness_set_update_cb(brightness_session_t *session,
 
 static inline int brightness_display_turn_off(brightness_session_t *session)
 {
+    int ret = brightness_set_mode(session, BRIGHTNESS_MODE_MANUAL);
+    if (ret < 0)
+        return ret;
+
     return brightness_set_target(session, BRIGHTNESS_LEVEL_OFF, 0);
 }
 

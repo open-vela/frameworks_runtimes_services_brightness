@@ -143,8 +143,12 @@ static void lightsensor_update_cb(const struct sensor_light data[], int n,
     float power = spline_interpolate(abc->spline, lux);
     info("lux: %.2f, power: %.2f\n", lux, power);
     int brightness = (int)power;
-    if (brightness > 255) {
-        brightness = 255;
+
+    /* Limit the brightness value */
+    if (brightness > BACKLIGHT_LEVEL_MAX) {
+        brightness = BACKLIGHT_LEVEL_MAX;
+    } else if (brightness < BACKLIGHT_LEVEL_MIN) {
+        brightness = BACKLIGHT_LEVEL_MIN;
     }
 
     if (brightness != abc->target) {
