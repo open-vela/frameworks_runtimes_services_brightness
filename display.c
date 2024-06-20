@@ -72,12 +72,6 @@ static int write_brightness(struct display_brightness_s *display,
     if (display->current == brightness)
         return OK;
 
-    if (brightness > BACKLIGHT_LEVEL_MAX) {
-        brightness = BACKLIGHT_LEVEL_MAX;
-    } else if (brightness < BACKLIGHT_LEVEL_MIN) {
-        brightness = BACKLIGHT_LEVEL_MIN;
-    }
-
     info("Set brightness to %d\n", brightness);
     ret = ioctl(display->fd, FBIOSET_POWER, brightness);
     if (ret < 0) {
@@ -181,8 +175,7 @@ struct display_brightness_s *display_brightness_open_device(const char *devpath,
 int display_brightness_set(struct display_brightness_s *display, int brightness,
                            int ramp)
 {
-    display->target = brightness;
-
+    int set = brightness;
     uv_timer_stop(&display->ramp_timer);
 
     if (ramp == BRIGHTNESS_RAMP_SPEED_DEFAULT) {
@@ -208,7 +201,10 @@ int display_brightness_set(struct display_brightness_s *display, int brightness,
         brightness = BACKLIGHT_LEVEL_MIN;
     }
 
-    syslog(LOG_INFO, "Set brightness to %d, ramp %d\n", brightness, ramp);
+    display->target = brightness;
+
+    syslog(LOG_INFO, "Set brightness to %d(clamp: %d), ramp %d\n", set,
+           brightness, ramp);
 
     if (ramp == 0) {
         display->ramp = 0;
