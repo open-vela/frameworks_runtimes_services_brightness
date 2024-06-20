@@ -96,6 +96,8 @@ struct lightsensor_s *lightsensor_open_device(
         return NULL;
     }
 
+    uv_topic_set_frequency(&handle->topic, CONFIG_LIGHTSENSOR_FREQUENCY);
+
     handle->topic.flags = (uintptr_t)handle;
     handle->update_cb = update_cb;
     handle->user_data = user_data;

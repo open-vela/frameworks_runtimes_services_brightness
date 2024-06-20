@@ -45,9 +45,10 @@
 #define MAX_GAMMA 2.0f
 
 /* clang-format off */
-#define LIGHTSENSOR_JITTER_THRESHOLD    5.0f /* lux +-5 is regarded as jitter */
-#define LIGHTSENSOR_DRAMATIC_THRESHOLD  20.0f /* lux change > 20 is regarded as dramatic */
-#define LIGHTSENSOR_FILTER_FACTOR       0.9f
+#define LIGHTSENSOR_JITTER_THRESHOLD    0.2f    /* lux change less than 20% regarded as jitter */
+#define LIGHTSENSOR_DRAMATIC_THRESHOLD  0.6f    /* lux change regarded as dramatic */
+#define LIGHTSENSOR_FILTER_FACTOR       0.1f    /* Exponential smoothing filter coefficient  */
+#define LIGHTSENSOR_STEADY_COUNT        10      /* After how much samples, result is treated as steady */
 /* clang-format on */
 
 /****************************************************************************
@@ -69,8 +70,12 @@ struct abc_s {
     bool running;
     uv_loop_t *loop;
 
-    int target;     /* Current brightness target calculated by abc. */
-    float lux_last; /* Last valid lux value received */
+    int target;         /* Current brightness target calculated by abc. */
+    float lux_last;     /* Last valid lux value received */
+    float lux_filtered; /* Latest filtered lux value */
+    float lux_set;      /* Lux used to set brightness */
+    int steady_count;   /* How much samples are steady. */
+    int dramatic_count; /* How much samples are dramatic. */
 
     float user_lux;
     int user_brightness;
@@ -121,25 +126,53 @@ static void lightsensor_update_cb(const struct sensor_light data[], int n,
     }
 
     float lux = data[0].light;
+    abc->lux_last = lux;
 
     if (!abc->running) {
-        abc->lux_last = lux; /* Update last flux and return directly,. */
+        /* If abc is not running due to short-term model, resume it after
+         * dramatic change. */
+        if (abc->interactive_model == NULL) {
+            /* interactive model timeout already */
+            if (fabsf(lux - abc->user_lux) >
+                abc->user_lux * LIGHTSENSOR_DRAMATIC_THRESHOLD) {
+                abc->running = true;
+            }
+        }
         return;
     }
 
-    /* Filter jitter. */
-    float delta = fabs(lux - abc->lux_last);
-    if (delta <= LIGHTSENSOR_JITTER_THRESHOLD) {
-        return;
+    /* Check if input is steady. */
+    if (fabsf(lux - abc->lux_set) > abc->lux_set * LIGHTSENSOR_DRAMATIC_THRESHOLD) {
+        abc->steady_count = 0;
+        abc->lux_filtered = lux;
+        abc->dramatic_count++;
+        if (abc->dramatic_count < LIGHTSENSOR_STEADY_COUNT) {
+            /* Not dramatic enough */
+            return;
+        }
+    } else {
+        abc->dramatic_count = 0;
+        abc->lux_filtered = lux * LIGHTSENSOR_FILTER_FACTOR +
+                            abc->lux_filtered * (1 - LIGHTSENSOR_FILTER_FACTOR);
+        if (fabsf(lux - abc->lux_filtered) >
+            abc->lux_filtered * LIGHTSENSOR_JITTER_THRESHOLD) {
+            /* Ignore non-stable results */
+            abc->steady_count = 0;
+            return;
+        }
+
+        abc->steady_count++;
+        if (abc->steady_count < LIGHTSENSOR_STEADY_COUNT) {
+            /* Not stable enough. */
+            return;
+        }
+
+        /* Clear for next detection. */
+        abc->steady_count = 0;
     }
 
-    if (delta < LIGHTSENSOR_DRAMATIC_THRESHOLD) {
-        /* Filter the input data. */
-        lux = lux * LIGHTSENSOR_FILTER_FACTOR +
-              abc->lux_last * (1 - LIGHTSENSOR_FILTER_FACTOR);
-    }
-
-    abc->lux_last = lux;
+    lux = abc->lux_filtered;
+    abc->lux_set = lux;
     float power = spline_interpolate(abc->spline, lux);
     info("lux: %.2f, power: %.2f\n", lux, power);
     int brightness = (int)power;
@@ -438,6 +471,8 @@ int abc_set_target(struct abc_s *abc, int target, int ramp)
 
     /**
      * Temporarily stop auto brightness, and manually control it.
+     * Once interactive model exits, only after dramatic change, the auto
+     * brightness will resume.
      */
     abc->running = false;
     display_brightness_set(abc->display, target, ramp);

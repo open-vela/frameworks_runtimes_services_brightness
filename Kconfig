@@ -43,6 +43,10 @@ config BACKLIGHT_LEVEL_MAX
 	int "The maximum backlight level"
 	default 255
 
+config LIGHTSENSOR_FREQUENCY
+	int "The frequency of the light sensor in Hz"
+	default 5
+
 config BRIGHTNESS_SERVICE_PERSISTENT
 	bool "Enable brightness persistent"
 	default y
