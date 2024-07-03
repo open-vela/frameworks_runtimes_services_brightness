@@ -67,7 +67,7 @@ MAINSRC := $(wildcard $(MAINSRC))
 NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
 ifneq ($(NOEXPORTSRCS),)
-BIN := $(APPDIR)/staging/libframework.a
+BIN := $(APPDIR)/staging/libframework_base_brightness.a
 endif
 
 EXPORT_FILES := include
