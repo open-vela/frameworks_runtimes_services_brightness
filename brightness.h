@@ -32,7 +32,12 @@ extern "C" {
  * Public Types
  ****************************************************************************/
 
-typedef void(brightness_update_cb_t)(int level, void *user_data);
+enum {
+  BRIGHTNESS_MONITOR_LEVEL = 0,
+  BRIGHTNESS_MONITOR_MODE = 1,
+};
+
+typedef void(brightness_update_cb_t)(int type, intptr_t arg, void *user_data);
 struct brightness_session_s;
 typedef struct brightness_session_s brightness_session_t;
 
