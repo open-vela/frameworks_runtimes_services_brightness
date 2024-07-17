@@ -16,8 +16,7 @@
 
 package os.brightness;
 
-import os.brightness.MessageType;
-
-interface IBrightnessObserver {
-    oneway void onBrightnessChanged(in MessageType type, in int arg);
+@Backing(type = "int") enum MessageType {
+    BRIGHTNESS_LEVEL = 0,
+    BRIGHTNESS_MODE = 1,
 }

@@ -81,14 +81,18 @@ BrightnessService::monitorBrightness(const sp<IBrightnessObserver> &observer)
     mObservers.insert(observer);
     ALOGD("BrightnessService::monitorBrightness: %p", observer.get());
     brightness_session_t *session = brightness_get_system_session();
-    observer->onBrightnessChanged(brightness_get_current_level());
+    observer->onBrightnessChanged(MessageType::BRIGHTNESS_LEVEL,
+                                  brightness_get_current_level());
+    observer->onBrightnessChanged(MessageType::BRIGHTNESS_MODE,
+                                  brightness_get_mode(NULL));
 
     brightness_set_update_cb(
         session,
-        [](int brightness, void *user_data) {
+        [](int type, intptr_t arg, void *user_data) {
             auto *service = static_cast<BrightnessService *>(user_data);
             for (const auto &o : service->mObservers) {
-                o->onBrightnessChanged((int32_t)brightness);
+                o->onBrightnessChanged(static_cast<MessageType>(type),
+                                       (int32_t)arg);
             }
         },
         this);
