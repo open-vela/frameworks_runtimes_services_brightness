@@ -123,6 +123,11 @@ static void apply_session(brightness_session_t *pending)
 #ifdef CONFIG_BRIGHTNESS_SERVICE_PERSISTENT
         brightness_save_mode(pending->mode);
 #endif
+
+        if (controller->cb) {
+            controller->cb(BRIGHTNESS_MONITOR_MODE, pending->mode,
+                           controller->user_data);
+        }
     }
 
     if (controller->current_target != pending->target ||
@@ -139,11 +144,12 @@ static void apply_session(brightness_session_t *pending)
     controller->user_data = pending->user_data;
 }
 
-static void brightness_update_cb(int brightness, void *user_data)
+static void brightness_update_cb(int type, int brightness, void *user_data)
 {
     struct brightness_s *controller = user_data;
     if (controller->cb) {
-        controller->cb(brightness, controller->user_data);
+        controller->cb(type, brightness,
+                       controller->user_data);
     }
 }
 

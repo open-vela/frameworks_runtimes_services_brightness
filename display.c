@@ -81,7 +81,7 @@ static int write_brightness(struct display_brightness_s *display,
 
     display->current = brightness;
     if (display->cb) {
-        display->cb(brightness, display->user_data);
+        display->cb(BRIGHTNESS_MONITOR_LEVEL, brightness, display->user_data);
     }
     return 0;
 }
