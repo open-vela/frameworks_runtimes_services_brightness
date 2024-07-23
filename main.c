@@ -144,12 +144,11 @@ static void apply_session(brightness_session_t *pending)
     controller->user_data = pending->user_data;
 }
 
-static void brightness_update_cb(int type, int brightness, void *user_data)
+static void brightness_update_cb(int type, intptr_t brightness, void *user_data)
 {
     struct brightness_s *controller = user_data;
     if (controller->cb) {
-        controller->cb(type, brightness,
-                       controller->user_data);
+        controller->cb(type, brightness, controller->user_data);
     }
 }
 

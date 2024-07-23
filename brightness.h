@@ -21,7 +21,9 @@
  * Included Files
  ****************************************************************************/
 
+#include <stdint.h>
 #include <uv.h>
+
 #include "BrightnessServiceC.h"
 
 #ifdef __cplusplus
@@ -33,8 +35,8 @@ extern "C" {
  ****************************************************************************/
 
 enum {
-  BRIGHTNESS_MONITOR_LEVEL = 0,
-  BRIGHTNESS_MONITOR_MODE = 1,
+    BRIGHTNESS_MONITOR_LEVEL = 0,
+    BRIGHTNESS_MONITOR_MODE = 1,
 };
 
 typedef void(brightness_update_cb_t)(int type, intptr_t arg, void *user_data);
