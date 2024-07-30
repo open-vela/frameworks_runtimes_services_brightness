@@ -16,13 +16,8 @@
 
 #pragma once
 
-#include <uv.h>
-
-#include <optional>
-#include <string>
-#include <set>
-
 #include "os/brightness/BnBrightnessService.h"
+#include <uv.h>
 
 namespace os {
 namespace brightness {
@@ -55,7 +50,7 @@ class BrightnessService : public BnBrightnessService {
 
   private:
     uv_loop_t *mLoop;
-    std::set <sp<IBrightnessObserver>> mObservers;
+    std::map<sp<IBinder>, sp<IBrightnessObserver>> mObservers;
 };
 
 } // namespace brightness

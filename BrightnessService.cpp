@@ -78,8 +78,9 @@ Status BrightnessService::getCurrentBrightness(int32_t *brightness)
 Status
 BrightnessService::monitorBrightness(const sp<IBrightnessObserver> &observer)
 {
-    mObservers.insert(observer);
-    ALOGD("BrightnessService::monitorBrightness: %p", observer.get());
+    sp<IBinder> client = IInterface::asBinder(observer);
+    mObservers.insert({client, observer});
+    ALOGD("BrightnessService::monitorBrightness: %p", client.get());
     brightness_session_t *session = brightness_get_system_session();
     observer->onBrightnessChanged(MessageType::BRIGHTNESS_LEVEL,
                                   brightness_get_current_level());
@@ -90,8 +91,8 @@ BrightnessService::monitorBrightness(const sp<IBrightnessObserver> &observer)
         session,
         [](int type, intptr_t arg, void *user_data) {
             auto *service = static_cast<BrightnessService *>(user_data);
-            for (const auto &o : service->mObservers) {
-                o->onBrightnessChanged(static_cast<MessageType>(type),
+            for (const auto &[k, v] : service->mObservers) {
+                v->onBrightnessChanged(static_cast<MessageType>(type),
                                        (int32_t)arg);
             }
         },
@@ -102,8 +103,11 @@ BrightnessService::monitorBrightness(const sp<IBrightnessObserver> &observer)
 Status
 BrightnessService::unmonitorBrightness(const sp<IBrightnessObserver> &observer)
 {
-    ALOGD("BrightnessService::unmonitorBrightness: %p", observer.get());
-    mObservers.erase(observer);
+    sp<IBinder> client = IInterface::asBinder(observer);
+    ALOGW_IF(
+        mObservers.erase(client) == 0,
+        "BrightnessService::unmonitorBrightness: erase observer NOT FOUND!!!");
+    ALOGD("BrightnessService::unmonitorBrightness: %p", client.get());
     if (mObservers.empty()) {
         brightness_session_t *session = brightness_get_system_session();
         brightness_set_update_cb(session, NULL, NULL);
