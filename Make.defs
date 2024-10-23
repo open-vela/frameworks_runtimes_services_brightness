@@ -16,9 +16,9 @@
 
 ifeq ($(CONFIG_SYSTEM_BRIGHTNESS_SERVICE),y)
 
-CONFIGURED_APPS += frameworks/base/brightness
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/brightness/include
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/brightness/include
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/base/brightness/aidl
+CONFIGURED_APPS += frameworks/runtimes/services/brightness
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/brightness/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/brightness/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/services/brightness/aidl
 
 endif
