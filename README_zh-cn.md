@@ -33,8 +33,13 @@
 亮度服务应跟随systemd启动。
 
 ## 与亮度服务交互
+
 建议使用AIDL接口控制亮度模式和设置亮度级别。`include/BrightnessServiceC.h`中提供了C语言接口。
 
-要设置亮度模式，只需调用`BrightnessService_setBrightnessMode`。自动模式是让控制器自动读取传感器并决定当前亮度级别，而手动模式允许将亮度设置为任何值。两个特殊的亮度级别`BRIGHTNESS_LEVEL_OFF`和`BRIGHTNESS_LEVEL_FULL`，可以用于关闭显示或设置为全亮。
+要设置亮度模式，只需调用`BrightnessService_setBrightnessMode`:
+  * `BRIGHTNESS_MODE_AUTO`是让控制器自动读取传感器并决定当前亮度级别。
+  * `BRIGHTNESS_MODE_MANUAL`允许将亮度设置为任何值。
+
+两个特殊的亮度级别`BRIGHTNESS_LEVEL_OFF`和`BRIGHTNESS_LEVEL_FULL`，可以用于关闭显示或设置为全亮。
 
 如果启用了KVDB，用户设置（包括模式和级别）将自动保存，并在下次启动时恢复。
