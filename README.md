@@ -40,9 +40,12 @@ The brightness service should start with systemd.
 It's recommended to use the AIDL interface to control brightness mode and
 set brightness level. A C wrapper is provided in `include/BrightnessServiceC.h`.
 
-To set brightness mode, simply call `BrightnessService_setBrightnessMode`. Auto
-mode is to let the controller automatically read sensor and decides current
-brightness level. While manual mode allows to set the brightness to any value.
+To set brightness mode, simply call `BrightnessService_setBrightnessMode`.
+
+* `BRIGHTNESS_MODE_AUTO` Auto mode is to let the controller automatically read sensor and decides current
+brightness level.
+* `BRIGHTNESS_MODE_MANUAL` Manual mode allows to set the brightness to any value.
+
 Two special brightness level `BRIGHTNESS_LEVEL_OFF` and `BRIGHTNESS_LEVEL_FULL`
 are provided to set turn off display or to full brightness.
 
