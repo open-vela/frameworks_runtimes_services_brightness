@@ -1,13 +1,10 @@
-# Introduction
+# Brightness Service
 
-[English|[简体中文](./README_zh-cn.md)]
+[English | [简体中文](./README_zh-cn.md)]
 
-THe brightness service provides automatic screen brightness control based on
-light sensor input. It can also respond to user input to adjust the control
-curve correspondingly. It hugely inspired by Android brightness service.
+The brightness service provides automatic screen brightness control based on light sensor input, and can adjust the control curve accordingly in response to user input.
 
-This service relies on serval other modules including libuv, uorb, and video
-driver. If `KVDB` is enabled, user settings will be persist.
+The service depends on several other modules including libuv, uorb, and video drivers. If `KVDB` is enabled, user settings will be persisted.
 
 # Project Structure
 
