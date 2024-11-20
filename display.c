@@ -67,36 +67,25 @@ struct display_brightness_s {
 static int write_brightness(struct display_brightness_s *display,
                             int brightness)
 {
-    int ret;
-
     if (display->current == brightness)
         return OK;
 
     info("Set brightness to %d\n", brightness);
-    ret = ioctl(display->fd, FBIOSET_POWER, brightness);
-    if (ret < 0) {
-        err("Failed to set brightness, %d\n", ret);
-        return ret;
-    }
 
     display->current = brightness;
     if (display->cb) {
         display->cb(BRIGHTNESS_MONITOR_LEVEL, brightness, display->user_data);
     }
+
+    ioctl(display->fd, FBIOSET_POWER, brightness);
     return 0;
 }
 
 static int read_brightness(struct display_brightness_s *display,
                            int *brightness)
 {
-    int ret;
-
-    ret = ioctl(display->fd, FBIOGET_POWER, brightness);
-    if (ret < 0) {
-        err("Failed to read brightness, %d\n", ret);
-        return ret;
-    }
-
+    *brightness = display->current; /* Use cached value as default */
+    ioctl(display->fd, FBIOGET_POWER, brightness);
     return 0;
 }
 
@@ -139,7 +128,6 @@ struct display_brightness_s *display_brightness_open_device(const char *devpath,
     struct display_brightness_s *display;
     int fd;
     int brightness;
-    int ret;
 
     display = zalloc(sizeof(struct display_brightness_s));
     if (!display) {
@@ -157,14 +145,7 @@ struct display_brightness_s *display_brightness_open_device(const char *devpath,
     display->loop = loop;
     display->fd = fd;
 
-    ret = read_brightness(display, &brightness);
-    if (ret < 0) {
-        err("Failed to read brightness, %d\n", ret);
-        free(display);
-        close(fd);
-        return NULL;
-    }
-
+    read_brightness(display, &brightness);
     display->current = brightness;
     uv_timer_init(loop, &display->ramp_timer);
     display->ramp_timer.data = display;
