@@ -19,16 +19,16 @@
 
 #include "../brightness.h"
 
-static void slider_event_cb(lv_event_t *e);
-static lv_obj_t *slider_label;
+static void slider_event_cb(lv_event_t* e);
+static lv_obj_t* slider_label;
 
 /**
  * A default slider with a label displaying the current value
  */
 
-static void slider_event_cb(lv_event_t *e)
+static void slider_event_cb(lv_event_t* e)
 {
-    lv_obj_t *slider = lv_event_get_target(e);
+    lv_obj_t* slider = lv_event_get_target(e);
     char buf[8];
     lv_snprintf(buf, sizeof(buf), "%d%%", (int)lv_slider_get_value(slider));
     lv_label_set_text(slider_label, buf);
@@ -37,37 +37,36 @@ static void slider_event_cb(lv_event_t *e)
     brightness_set_target(NULL, lv_slider_get_value(slider) * 255 / 100, 1000);
 }
 
-static void switch_event_handler(lv_event_t *e)
+static void switch_event_handler(lv_event_t* e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *obj = lv_event_get_target(e);
+    lv_obj_t* obj = lv_event_get_target(e);
     if (code == LV_EVENT_VALUE_CHANGED) {
         LV_UNUSED(obj);
         bool on = lv_obj_has_state(obj, LV_STATE_CHECKED);
         LV_LOG_USER("State: %s\n", on ? "On" : "Off");
-        brightness_set_mode(NULL, on ? BRIGHTNESS_MODE_AUTO
-                                     : BRIGHTNESS_MODE_MANUAL);
+        brightness_set_mode(NULL, on ? BRIGHTNESS_MODE_AUTO : BRIGHTNESS_MODE_MANUAL);
     }
 }
 
-static void button_event_handler(lv_event_t *e)
+static void button_event_handler(lv_event_t* e)
 {
-    bool *run = lv_event_get_user_data(e);
+    bool* run = lv_event_get_user_data(e);
     *run = false;
     fprintf(stderr, "Exit brightness test UI now.\n");
 }
 
-static void ui_brightness(bool *run)
+static void ui_brightness(bool* run)
 {
-    lv_obj_t *root = lv_obj_create(lv_screen_active());
+    lv_obj_t* root = lv_obj_create(lv_screen_active());
     lv_obj_set_size(root, LV_PCT(80), LV_PCT(80));
     lv_obj_center(root);
     lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(root, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
-                          LV_FLEX_ALIGN_CENTER);
+        LV_FLEX_ALIGN_CENTER);
 
     /*Create a slider in the center of the display*/
-    lv_obj_t *slider = lv_slider_create(root);
+    lv_obj_t* slider = lv_slider_create(root);
     lv_obj_set_width(slider, LV_PCT(80));
     lv_obj_center(slider);
     lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
@@ -79,24 +78,24 @@ static void ui_brightness(bool *run)
 
     lv_obj_align_to(slider_label, slider, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
 
-    lv_obj_t *cont = lv_obj_create(root);
+    lv_obj_t* cont = lv_obj_create(root);
     lv_obj_set_size(cont, LV_PCT(100), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
-                          LV_FLEX_ALIGN_CENTER);
+        LV_FLEX_ALIGN_CENTER);
 
-    lv_obj_t *hint = lv_label_create(cont);
+    lv_obj_t* hint = lv_label_create(cont);
     lv_label_set_text(hint, "AutoBrightness");
-    lv_obj_t *sw = lv_switch_create(cont);
+    lv_obj_t* sw = lv_switch_create(cont);
     lv_obj_add_event_cb(sw, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
-    lv_obj_t *btn = lv_button_create(root);
-    lv_obj_t *label = lv_label_create(btn);
+    lv_obj_t* btn = lv_button_create(root);
+    lv_obj_t* label = lv_label_create(btn);
     lv_label_set_text(label, "EXIT");
     lv_obj_add_event_cb(btn, button_event_handler, LV_EVENT_CLICKED, run);
 }
 
-int brightness_test_ui(int argc, FAR char *argv[])
+int brightness_test_ui(int argc, FAR char* argv[])
 {
     lv_nuttx_dsc_t info;
     lv_nuttx_result_t result;
@@ -116,11 +115,16 @@ int brightness_test_ui(int argc, FAR char *argv[])
     ui_brightness(&run);
 
     while (run) {
-        lv_timer_handler();
-        usleep(10 * 1000);
+        uint32_t idle;
+        idle = lv_timer_handler();
+
+        /* Minimum sleep of 1ms */
+
+        idle = idle ? idle : 1;
+        usleep(idle * 1000);
     }
 
-    lv_disp_remove(result.disp);
+    lv_nuttx_deinit(&result);
     lv_deinit();
 
     return 0;
