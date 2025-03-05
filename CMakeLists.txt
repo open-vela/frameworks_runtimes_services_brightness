@@ -21,7 +21,7 @@ if(CONFIG_SYSTEM_BRIGHTNESS_SERVICE)
   nuttx_add_dependencies(TARGET ${CUR_TARGET} DEPENDS android_binder)
 
   set(INCDIR ${CURRENT_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/aidl)
-  file(GLOB_RECURSE CXXRCS ${CURRENT_DIR}/src/*.cpp)
+  file(GLOB CXXRCS ${CURRENT_DIR}/*.cpp)
   set(CSRCS main.c spline.c abc.c display.c lightsensor.c)
 
   if(CONFIG_BRIGHTNESS_SERVICE_PERSISTENT)
