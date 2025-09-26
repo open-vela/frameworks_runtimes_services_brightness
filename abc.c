@@ -17,6 +17,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <assert.h>
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
@@ -44,12 +45,21 @@
 
 #define MAX_GAMMA 2.0f
 
-/* clang-format off */
-#define LIGHTSENSOR_JITTER_THRESHOLD    0.2f    /* lux change less than 20% regarded as jitter */
-#define LIGHTSENSOR_DRAMATIC_THRESHOLD  0.6f    /* lux change regarded as dramatic */
-#define LIGHTSENSOR_FILTER_FACTOR       0.1f    /* Exponential smoothing filter coefficient  */
-#define LIGHTSENSOR_STEADY_COUNT        10      /* After how much samples, result is treated as steady */
-/* clang-format on */
+/* lux change less than 20% regarded as jitter */
+
+#define LIGHTSENSOR_JITTER_THRESHOLD 0.2f
+
+/* lux change regarded as dramatic */
+
+#define LIGHTSENSOR_DRAMATIC_THRESHOLD 0.6f
+
+/* Exponential smoothing filter coefficient  */
+
+#define LIGHTSENSOR_FILTER_FACTOR 0.1f
+
+/* After how much samples, result is treated as steady */
+
+#define LIGHTSENSOR_STEADY_COUNT 10
 
 /****************************************************************************
  * Private Types
@@ -142,7 +152,8 @@ static void lightsensor_update_cb(const struct sensor_light data[], int n,
     }
 
     /* Check if input is steady. */
-    if (fabsf(lux - abc->lux_set) > abc->lux_set * LIGHTSENSOR_DRAMATIC_THRESHOLD) {
+    if (fabsf(lux - abc->lux_set) >
+        abc->lux_set * LIGHTSENSOR_DRAMATIC_THRESHOLD) {
         abc->steady_count = 0;
         abc->lux_filtered = lux;
         abc->dramatic_count++;
