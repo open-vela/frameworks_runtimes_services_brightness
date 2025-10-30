@@ -28,31 +28,32 @@
 #include <BrightnessService.h>
 #include <os/brightness/IBrightnessService.h>
 
-using namespace android;
-using namespace os::brightness;
+namespace os {
+namespace brightness {
 
-static sp<os::brightness::IBrightnessService> get_service(void)
+static sp<IBrightnessService> get_service(void)
 {
-    sp<IServiceManager> sm(defaultServiceManager());
+    sp<android::IServiceManager> sm(android::defaultServiceManager());
     ALOGI("defaultServiceManager(): %p", sm.get());
 
     // obtain brightness.service
-    sp<IBinder> binder =
-        sm->getService(os::brightness::BrightnessService::name());
+    sp<IBinder> binder = sm->getService(BrightnessService::name());
     if (binder == NULL) {
         ALOGE("brightness service binder is null, abort...");
         return nullptr;
     }
 
-    sp<os::brightness::IBrightnessService> service =
-        interface_cast<os::brightness::IBrightnessService>(binder);
+    sp<IBrightnessService> service = interface_cast<IBrightnessService>(binder);
     ALOGI("brightness service is %p", service.get());
     return service;
 }
 
+} // namespace brightness
+} // namespace os
+
 int BrightnessService_setTargetBrightness(int32_t brightness, int ramp)
 {
-    auto service = get_service();
+    auto service = os::brightness::get_service();
     if (service == nullptr) {
         return -1;
     }
@@ -63,7 +64,7 @@ int BrightnessService_setTargetBrightness(int32_t brightness, int ramp)
 int BrightnessService_getTargetBrightness(int32_t *brightness)
 {
     int32_t level = 0;
-    auto service = get_service();
+    auto service = os::brightness::get_service();
     if (service == nullptr) {
         return -1;
     }
@@ -76,19 +77,20 @@ int BrightnessService_getTargetBrightness(int32_t *brightness)
 
 int BrightnessService_setBrightnessMode(int32_t mode)
 {
-    auto service = get_service();
+    auto service = os::brightness::get_service();
     if (service == nullptr) {
         return -1;
     }
 
-    auto status = service->setBrightnessMode(static_cast<Mode>(mode));
+    auto status =
+        service->setBrightnessMode(static_cast<os::brightness::Mode>(mode));
     return status.isOk() ? 0 : -1;
 }
 
 int BrightnessService_getBrightnessMode(int32_t *mode)
 {
-    Mode _mode = Mode::AUTO;
-    auto service = get_service();
+    os::brightness::Mode _mode = os::brightness::Mode::AUTO;
+    auto service = os::brightness::get_service();
     if (service == nullptr) {
         return -1;
     }
@@ -100,7 +102,7 @@ int BrightnessService_getBrightnessMode(int32_t *mode)
 
 int BrightnessService_getCurrentBrightness(int32_t *brightness)
 {
-    auto service = get_service();
+    auto service = os::brightness::get_service();
     if (service == nullptr) {
         return -1;
     }
@@ -112,7 +114,7 @@ int BrightnessService_getCurrentBrightness(int32_t *brightness)
 
 int BrightnessService_displayTurnOff(void)
 {
-    auto service = get_service();
+    auto service = os::brightness::get_service();
     if (service == nullptr) {
         return -1;
     }
@@ -124,7 +126,7 @@ int BrightnessService_displayTurnOff(void)
 
 int BrightnessService_displayFullPower(void)
 {
-    auto service = get_service();
+    auto service = os::brightness::get_service();
     if (service == nullptr) {
         return -1;
     }
